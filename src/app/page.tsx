@@ -11,9 +11,26 @@ const regions = [
   { name: "West Texas & Panhandle", slug: "west-texas", cities: "El Paso, Lubbock, Amarillo", icon: "🏜️" },
 ];
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Best Texas Display",
+  "url": "https://besttexasdisplay.com",
+  "description": "Discover, share, and vote for the most spectacular holiday decoration displays across Texas.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://besttexasdisplay.com/cities/{search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+};
+
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#1B3A5C] via-[#1B3A5C] to-[#2C5F8A] text-white py-20 md:py-32 overflow-hidden">
         <div className="absolute inset-0 opacity-10">

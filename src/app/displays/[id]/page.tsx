@@ -41,8 +41,38 @@ export default async function DisplayPage({ params }: DisplayPageProps) {
   );
   const photos = photosResult.rows;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": display.title,
+    "description": display.description || `Holiday decoration display in ${display.city}, Texas`,
+    "url": `https://besttexasdisplay.com/displays/${display.id}`,
+    "author": display.owner_name ? { "@type": "Person", "name": display.owner_name } : undefined,
+    "locationCreated": {
+      "@type": "Place",
+      "name": `${display.city}, Texas`,
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": display.city,
+        "addressRegion": "TX",
+        "addressCountry": "US",
+      },
+    },
+    ...(photos.length > 0 ? { "image": photos.map((p: any) => p.url) } : {}),
+    "aggregateRating": display.vote_count > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": Math.min(5, Math.round((display.vote_count / Math.max(display.vote_count, 10)) * 5 * 10) / 10),
+      "ratingCount": display.vote_count,
+      "bestRating": 5,
+    } : undefined,
+  };
+
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Header */}
       <section className="bg-[#1B3A5C] text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
