@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Link from "next/link";
 import { AuthProvider } from "@/lib/auth-context";
 import NavbarClient from "@/components/NavbarClient";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: {
@@ -31,6 +32,22 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://besttexasdisplay.com",
   },
+  applicationName: "Best Texas Display",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "TX Display",
+  },
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1B3A5C",
+  width: "device-width",
+  initialScale: 1,
 };
 
 function Footer() {
@@ -87,6 +104,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-[#F8F6F1]">
+        <ServiceWorkerRegister />
         <AuthProvider>
           <NavbarClient />
           <main className="flex-grow">
