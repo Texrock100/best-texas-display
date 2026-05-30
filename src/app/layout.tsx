@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import NavbarClient from "@/components/NavbarClient";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.besttexasdisplay.com"),
   title: {
     default: "Best Texas Display | Vote for Texas's Best Holiday Decorations",
     template: "%s | Best Texas Display",
@@ -14,22 +15,22 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Best Texas Display | Vote for Texas's Best Holiday Decorations",
     description: "Discover, share, and vote for the most spectacular holiday decoration displays across Texas.",
-    url: "https://besttexasdisplay.com",
+    url: "https://www.besttexasdisplay.com",
     siteName: "Best Texas Display",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Best Texas Display",
-    description: "Vote for Texas's best holiday decoration displays",
+    title: "Best Texas Display | Vote for Texas's Best Holiday Decorations",
+    description: "Discover, share, and vote for the most spectacular holiday decoration displays across Texas.",
   },
   robots: {
     index: true,
     follow: true,
   },
   alternates: {
-    canonical: "https://besttexasdisplay.com",
+    canonical: "/",
   },
 };
 

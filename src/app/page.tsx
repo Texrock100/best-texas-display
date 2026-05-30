@@ -15,11 +15,11 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   "name": "Best Texas Display",
-  "url": "https://besttexasdisplay.com",
+  "url": "https://www.besttexasdisplay.com",
   "description": "Discover, share, and vote for the most spectacular holiday decoration displays across Texas.",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://besttexasdisplay.com/cities/{search_term_string}",
+    "target": "https://www.besttexasdisplay.com/cities/{search_term_string}",
     "query-input": "required name=search_term_string"
   }
 };
@@ -141,7 +141,7 @@ export default function Home() {
             {regions.map((region) => (
               <Link
                 key={region.slug}
-                href={`/leaderboard?region=${region.slug}`}
+                href={`/regions/${region.slug}`}
                 className="group bg-[#F8F6F1] rounded-xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all border border-gray-100"
               >
                 <div className="text-3xl mb-3">{region.icon}</div>

@@ -2,7 +2,7 @@ import pool from '@/lib/db';
 import type { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://besttexasdisplay.com';
+  const baseUrl = 'https://www.besttexasdisplay.com';
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
@@ -14,6 +14,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/login`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/register`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
   ];
+
+  // Region landing pages
+  const regionSlugs = ['dfw', 'houston', 'austin', 'san-antonio', 'east-texas', 'central-texas', 'south-texas', 'west-texas'];
+  const regionPages: MetadataRoute.Sitemap = regionSlugs.map((slug) => ({
+    url: `${baseUrl}/regions/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.8,
+  }));
 
   // City pages
   const citiesResult = await pool.query('SELECT slug FROM cities');
@@ -35,5 +44,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...cityPages, ...displayPages];
+  return [...staticPages, ...regionPages, ...cityPages, ...displayPages];
 }
