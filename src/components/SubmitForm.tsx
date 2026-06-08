@@ -8,6 +8,7 @@ export default function SubmitForm() {
   const { user, token } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -29,12 +30,14 @@ export default function SubmitForm() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []).slice(0, 5 - photos.length);
+    // Accept any image type (incl. HEIC from iPhones); the server converts to JPEG.
+    // Some browsers report an empty type for HEIC, so allow empty too.
     const validFiles = files.filter(
-      (f) => (f.type === "image/jpeg" || f.type === "image/png") && f.size <= 10 * 1024 * 1024
+      (f) => (f.type === "" || f.type.startsWith("image/")) && f.size <= 10 * 1024 * 1024
     );
 
     if (validFiles.length < files.length) {
-      setError("Some files were skipped (only JPG/PNG under 10MB accepted)");
+      setError("Some files were skipped (images only, under 10MB each)");
     }
 
     setPhotos((prev) => [...prev, ...validFiles].slice(0, 5));
@@ -46,6 +49,9 @@ export default function SubmitForm() {
       };
       reader.readAsDataURL(file);
     });
+
+    // Reset the input so re-selecting the same file fires onChange again.
+    e.target.value = "";
   };
 
   const removePhoto = (index: number) => {
@@ -250,7 +256,11 @@ export default function SubmitForm() {
             <label className="block text-sm font-semibold text-[#1B3A5C] mb-2">
               Photos <span className="text-gray-400 font-normal">(up to 5)</span>
             </label>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png" multiple
+            {/* Camera capture (mobile opens the rear camera directly) */}
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
+              onChange={handleFileChange} className="hidden" />
+            {/* Library / file picker (multi-select) */}
+            <input ref={fileInputRef} type="file" accept="image/*" multiple
               onChange={handleFileChange} className="hidden" />
 
             {previews.length > 0 && (
@@ -268,11 +278,19 @@ export default function SubmitForm() {
             )}
 
             {photos.length < 5 && (
-              <div onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-[#C0392B] transition-colors cursor-pointer">
-                <div className="text-4xl mb-2">📸</div>
-                <p className="text-gray-500 font-medium">Click or drag photos here</p>
-                <p className="text-xs text-gray-400 mt-1">JPG, PNG up to 10MB each • {5 - photos.length} remaining</p>
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
+                <div className="text-4xl mb-3">📸</div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button type="button" onClick={() => cameraInputRef.current?.click()}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#1B3A5C] hover:bg-[#15304d] text-white font-semibold rounded-lg transition-colors">
+                    📷 Take Photo
+                  </button>
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white border border-gray-300 text-[#1B3A5C] font-semibold rounded-lg hover:bg-gray-50 transition-colors">
+                    🖼️ Choose from Library
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-3">JPG, PNG, or HEIC up to 10MB each • {5 - photos.length} remaining</p>
               </div>
             )}
           </div>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 import pool from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 import { uploadToR2 } from '@/lib/s3';
@@ -25,9 +26,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File and display_id are required' }, { status: 400 });
     }
 
-    // Validate file type
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      return NextResponse.json({ error: 'Only JPG and PNG files are allowed' }, { status: 400 });
+    // Validate file type — accept any image (incl. HEIC from iPhones); we
+    // normalize to JPEG below. Some browsers report an empty type for HEIC.
+    if (file.type && !file.type.startsWith('image/')) {
+      return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 });
     }
 
     // Validate file size (10MB)
@@ -44,27 +46,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authorized to upload to this display' }, { status: 403 });
     }
 
-    // Generate key
-    const ext = file.type === 'image/png' ? 'png' : 'jpg';
-    const key = `displays/${displayId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
     // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const inputBuffer = Buffer.from(arrayBuffer);
 
-    // Upload to R2 (or store locally if R2 not configured)
+    // Normalize to JPEG and build a thumbnail. This handles HEIC/iPhone photos,
+    // auto-rotates via EXIF orientation, and strips metadata.
+    let mainBuffer: Buffer;
+    let thumbBuffer: Buffer;
+    try {
+      mainBuffer = await sharp(inputBuffer)
+        .rotate()
+        .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 82 })
+        .toBuffer();
+      thumbBuffer = await sharp(inputBuffer)
+        .rotate()
+        .resize({ width: 400, height: 400, fit: 'cover' })
+        .jpeg({ quality: 70 })
+        .toBuffer();
+    } catch (err) {
+      console.error('Image processing failed:', err);
+      return NextResponse.json({ error: 'Could not process image. Please try a different photo.' }, { status: 400 });
+    }
+
+    // Generate keys
+    const base = `displays/${displayId}/${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const mainKey = `${base}.jpg`;
+    const thumbKey = `${base}-thumb.jpg`;
+
+    // Upload to R2 (or store a placeholder if R2 isn't configured, e.g. local dev)
     let url: string;
+    let thumbnailUrl: string;
     if (process.env.R2_ENDPOINT && process.env.R2_ACCESS_KEY_ID) {
-      url = await uploadToR2(key, buffer, file.type);
+      [url, thumbnailUrl] = await Promise.all([
+        uploadToR2(mainKey, mainBuffer, 'image/jpeg'),
+        uploadToR2(thumbKey, thumbBuffer, 'image/jpeg'),
+      ]);
     } else {
-      // Fallback: store photo URL as placeholder
       url = `/api/placeholder-image?id=${displayId}&n=${sortOrder || 0}`;
+      thumbnailUrl = url;
     }
 
     // Insert photo record
     const photoResult = await pool.query(
       'INSERT INTO photos (display_id, url, thumbnail_url, sort_order) VALUES ($1, $2, $3, $4) RETURNING *',
-      [parseInt(displayId), url, url, parseInt(sortOrder || '0')]
+      [parseInt(displayId), url, thumbnailUrl, parseInt(sortOrder || '0')]
     );
 
     return NextResponse.json({ photo: photoResult.rows[0] }, { status: 201 });
