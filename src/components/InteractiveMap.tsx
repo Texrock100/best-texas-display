@@ -86,11 +86,11 @@ export default function InteractiveMap() {
     googleMapRef.current = new google.maps.Map(mapRef.current, {
       center: TEXAS_CENTER,
       zoom: 6,
-      mapId: "btd-map",
-      styles: [
-        { featureType: "poi", stylers: [{ visibility: "off" }] },
-        { featureType: "transit", stylers: [{ visibility: "off" }] },
-      ],
+      // Cloud-based Map ID (BestTXDisplay project) — required for Advanced Markers.
+      // Map styling (hiding POIs/transit, etc.) is configured on this Map ID in the
+      // Google Cloud console, not via an inline `styles` array (which is ignored when
+      // a mapId is present).
+      mapId: "23e95ecd7045f2d84abbe190",
     });
   }, [mapLoaded]);
 
