@@ -15,9 +15,13 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
   return {
     title: `Best Holiday Displays in ${city.name}, Texas`,
     description: `Discover and vote for the best Christmas lights, Halloween decorations, and holiday displays in ${city.name}, Texas. Browse photos, plan your driving tour, and submit your own display.`,
+    alternates: {
+      canonical: `/cities/${slug}`,
+    },
     openGraph: {
       title: `Best Holiday Displays in ${city.name}, Texas`,
       description: `Vote for the best holiday decorations in ${city.name}, TX.`,
+      url: `/cities/${slug}`,
     },
   };
 }

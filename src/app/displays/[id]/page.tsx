@@ -16,6 +16,14 @@ export async function generateMetadata({ params }: DisplayPageProps): Promise<Me
   return {
     title: `${d.title} — ${d.city}, Texas`,
     description: d.description || `View and vote for this holiday display in ${d.city}, Texas on BestTexasDisplay.com`,
+    alternates: {
+      canonical: `/displays/${id}`,
+    },
+    openGraph: {
+      title: `${d.title} — ${d.city}, Texas`,
+      description: d.description || `View and vote for this holiday display in ${d.city}, Texas on BestTexasDisplay.com`,
+      url: `/displays/${id}`,
+    },
   };
 }
 

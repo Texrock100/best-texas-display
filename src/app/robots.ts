@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/admin/'],
       },
     ],
-    sitemap: 'https://besttexasdisplay.com/sitemap.xml',
+    sitemap: 'https://www.besttexasdisplay.com/sitemap.xml',
   };
 }
