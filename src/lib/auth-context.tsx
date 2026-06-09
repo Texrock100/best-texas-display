@@ -8,6 +8,7 @@ interface User {
   display_name: string;
   role: string;
   city: string | null;
+  email_verified?: boolean;
 }
 
 interface AuthContextType {
@@ -17,6 +18,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: { email: string; password: string; display_name: string; city?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  // Merge updated fields into the cached user (e.g. after editing profile or verifying email).
+  updateUser: (fields: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -88,8 +91,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("btd_user");
   };
 
+  const updateUser = (fields: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...fields };
+      localStorage.setItem("btd_user", JSON.stringify(next));
+      return next;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

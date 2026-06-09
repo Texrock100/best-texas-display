@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await pool.query(
-      'SELECT id, email, password_hash, display_name, role, city FROM users WHERE email = $1',
+      'SELECT id, email, password_hash, display_name, role, city, email_verified FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
 
@@ -27,10 +27,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
+    // Record the successful login for activity tracking.
+    await pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
+
     const token = generateToken(user.id, user.email, user.role);
 
     return NextResponse.json({
-      user: { id: user.id, email: user.email, display_name: user.display_name, role: user.role, city: user.city },
+      user: {
+        id: user.id,
+        email: user.email,
+        display_name: user.display_name,
+        role: user.role,
+        city: user.city,
+        email_verified: user.email_verified,
+      },
       token,
     });
   } catch (error) {

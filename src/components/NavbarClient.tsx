@@ -32,7 +32,9 @@ export default function NavbarClient() {
               <div className="h-8 w-20 bg-white/10 rounded animate-pulse" />
             ) : user ? (
               <div className="flex items-center space-x-3">
-                <span className="hidden sm:inline text-sm text-gray-300">Hi, {user.display_name}</span>
+                <Link href="/account" className="hidden sm:inline text-sm text-gray-300 hover:text-[#D4A843] transition-colors">
+                  Hi, {user.display_name}
+                </Link>
                 {user.role === "admin" && (
                   <Link href="/admin" className="text-xs px-2 py-1 bg-[#D4A843] text-[#1B3A5C] rounded font-bold">
                     Admin
@@ -77,6 +79,9 @@ export default function NavbarClient() {
             <Link href="/map" onClick={() => setMobileOpen(false)} className="block py-2 hover:text-[#D4A843]">Map</Link>
             <Link href="/leaderboard" onClick={() => setMobileOpen(false)} className="block py-2 hover:text-[#D4A843]">Leaderboard</Link>
             <Link href="/cities" onClick={() => setMobileOpen(false)} className="block py-2 hover:text-[#D4A843]">Cities</Link>
+            {user && (
+              <Link href="/account" onClick={() => setMobileOpen(false)} className="block py-2 hover:text-[#D4A843]">My Account</Link>
+            )}
           </div>
         )}
       </div>
