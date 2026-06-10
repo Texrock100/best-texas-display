@@ -24,12 +24,14 @@ export default function SubmitForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []).slice(0, 5 - photos.length);
+  // Shared by the file picker, camera, and drag-and-drop: validate images and build previews.
+  const addFiles = (fileList: FileList | File[]) => {
+    const files = Array.from(fileList).slice(0, 5 - photos.length);
     // Accept any image type (incl. HEIC from iPhones); the server converts to JPEG.
     // Some browsers report an empty type for HEIC, so allow empty too.
     const validFiles = files.filter(
@@ -49,9 +51,19 @@ export default function SubmitForm() {
       };
       reader.readAsDataURL(file);
     });
+  };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    addFiles(e.target.files || []);
     // Reset the input so re-selecting the same file fires onChange again.
     e.target.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (photos.length >= 5) return;
+    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
   };
 
   const removePhoto = (index: number) => {
@@ -278,7 +290,12 @@ export default function SubmitForm() {
             )}
 
             {photos.length < 5 && (
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${dragActive ? "border-[#C0392B] bg-red-50" : "border-gray-200"}`}>
                 <div className="text-4xl mb-3">📸</div>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button type="button" onClick={() => cameraInputRef.current?.click()}
@@ -290,7 +307,8 @@ export default function SubmitForm() {
                     🖼️ Choose from Library
                   </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-3">JPG, PNG, or HEIC up to 10MB each • {5 - photos.length} remaining</p>
+                <p className="hidden sm:block text-sm text-gray-500 mt-3">…or drag &amp; drop photos here</p>
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG, or HEIC up to 10MB each • {5 - photos.length} remaining</p>
               </div>
             )}
           </div>
