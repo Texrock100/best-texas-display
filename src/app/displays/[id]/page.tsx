@@ -3,6 +3,8 @@ import pool from "@/lib/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import VoteButton from "@/components/VoteButton";
+import OwnerEditLink from "@/components/OwnerEditLink";
+import HomeownerPreference from "@/components/HomeownerPreference";
 
 interface DisplayPageProps {
   params: Promise<{ id: string }>;
@@ -42,6 +44,9 @@ export default async function DisplayPage({ params }: DisplayPageProps) {
 
   if (result.rows.length === 0) notFound();
   const display = result.rows[0];
+
+  // A display taken down via a homeowner request is hidden from the public.
+  if (display.status === "removed") notFound();
 
   const photosResult = await pool.query(
     "SELECT * FROM photos WHERE display_id = $1 ORDER BY sort_order",
@@ -100,6 +105,9 @@ export default async function DisplayPage({ params }: DisplayPageProps) {
               {display.owner_name && (
                 <p className="text-sm text-gray-400 mt-1">Submitted by {display.owner_name}</p>
               )}
+              <div className="mt-3">
+                <OwnerEditLink displayId={display.id} ownerId={display.owner_id} />
+              </div>
             </div>
             <div className="mt-4 md:mt-0 flex items-center space-x-6">
               <div className="text-center">
@@ -165,22 +173,22 @@ export default async function DisplayPage({ params }: DisplayPageProps) {
         </div>
       </section>
 
-      {/* Address / Map placeholder */}
-      {display.address && display.latitude && display.longitude && (
+      {/* Approximate location only — we never show the street address. */}
+      {display.latitude && display.longitude && (
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h2 className="text-xl font-bold text-[#1B3A5C] mb-3">Location</h2>
-          <p className="text-gray-600 mb-4">{display.address}, {display.city}, TX</p>
-          <div className="aspect-video bg-gray-200 rounded-xl flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-4xl mb-2">🗺️</div>
-              <p>Interactive map coming soon</p>
-              <Link href={`/map?lat=${display.latitude}&lng=${display.longitude}`} className="text-[#C0392B] hover:underline text-sm mt-2 inline-block">
-                View on full map →
-              </Link>
-            </div>
-          </div>
+          <p className="text-gray-600 mb-4">
+            {display.neighborhood ? `${display.neighborhood}, ` : ""}{display.city}, TX
+            <span className="text-gray-400 text-sm"> (approximate area)</span>
+          </p>
+          <Link href={`/map?lat=${display.latitude}&lng=${display.longitude}`} className="text-[#C0392B] hover:underline text-sm inline-block">
+            View the area on the map →
+          </Link>
         </section>
       )}
+
+      {/* Homeowner preference / takedown */}
+      <HomeownerPreference displayId={display.id} />
     </div>
   );
 }

@@ -27,7 +27,20 @@ interface DisplayRow {
   photo_count: string;
 }
 
-type Tab = "overview" | "pending" | "approved" | "all";
+interface RemovalRequest {
+  id: number;
+  display_id: number;
+  requester_name: string;
+  requester_email: string;
+  requested_type: "remove_location" | "remove_home";
+  message: string | null;
+  status: string;
+  created_at: string;
+  display_title: string;
+  display_status: string;
+}
+
+type Tab = "overview" | "pending" | "approved" | "all" | "requests";
 
 export default function AdminDashboard() {
   const { user, token, loading } = useAuth();
@@ -37,6 +50,7 @@ export default function AdminDashboard() {
   const [recentDisplays, setRecentDisplays] = useState<DisplayRow[]>([]);
   const [topCities, setTopCities] = useState<any[]>([]);
   const [displays, setDisplays] = useState<DisplayRow[]>([]);
+  const [requests, setRequests] = useState<RemovalRequest[]>([]);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   const fetchStats = useCallback(async () => {
@@ -73,11 +87,32 @@ export default function AdminDashboard() {
     fetchStats();
   }, [user, loading, router, fetchStats]);
 
-  useEffect(() => {
-    if (tab !== "overview") {
-      fetchDisplays(tab);
+  const fetchRequests = useCallback(async () => {
+    if (!token) return;
+    const res = await fetch("/api/admin/removal-requests", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setRequests(data.requests);
     }
-  }, [tab, fetchDisplays]);
+  }, [token]);
+
+  useEffect(() => {
+    if (tab === "requests") fetchRequests();
+    else if (tab !== "overview") fetchDisplays(tab);
+  }, [tab, fetchDisplays, fetchRequests]);
+
+  const actOnRequest = async (id: number, action: "remove_location" | "remove_home" | "dismiss") => {
+    setActionLoading(id);
+    await fetch("/api/admin/removal-requests", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id, action }),
+    });
+    await fetchRequests();
+    setActionLoading(null);
+  };
 
   const updateDisplay = async (id: number, updates: { status?: string; featured?: boolean }) => {
     setActionLoading(id);
@@ -117,12 +152,13 @@ export default function AdminDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 rounded-xl p-1 mb-8 max-w-lg">
+      <div className="flex flex-wrap gap-1 bg-gray-100 rounded-xl p-1 mb-8 max-w-2xl">
         {([
           ["overview", "Overview"],
           ["pending", "Pending"],
           ["approved", "Approved"],
           ["all", "All Displays"],
+          ["requests", "Homeowner Requests"],
         ] as [Tab, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -208,7 +244,7 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {tab !== "overview" && (
+      {tab !== "overview" && tab !== "requests" && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -294,6 +330,65 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {tab === "requests" && (
+        <div className="space-y-4">
+          {requests.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center text-gray-400">
+              No homeowner requests.
+            </div>
+          ) : (
+            requests.map((r) => {
+              const pending = r.status === "pending";
+              return (
+                <div key={r.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <a href={`/displays/${r.display_id}`} className="font-semibold text-[#1B3A5C] hover:underline">
+                          {r.display_title || `Display #${r.display_id}`}
+                        </a>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          r.requested_type === "remove_home" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+                        }`}>
+                          {r.requested_type === "remove_home" ? "Wants: Remove home" : "Wants: Remove location"}
+                        </span>
+                        {!pending && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">{r.status}</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {r.requester_name} &bull;{" "}
+                        <a href={`mailto:${r.requester_email}`} className="text-[#C0392B] hover:underline">{r.requester_email}</a>
+                      </p>
+                      {r.message && <p className="text-sm text-gray-500 mt-2 whitespace-pre-line">“{r.message}”</p>}
+                      <p className="text-xs text-gray-400 mt-2">
+                        {new Date(r.created_at).toLocaleString()} &bull; display is currently <span className="font-medium">{r.display_status}</span>
+                      </p>
+                    </div>
+                    {pending && (
+                      <div className="flex flex-wrap gap-2 shrink-0">
+                        <button onClick={() => actOnRequest(r.id, "remove_location")} disabled={actionLoading === r.id}
+                          className="text-xs px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50">
+                          🗺️ Remove location
+                        </button>
+                        <button onClick={() => actOnRequest(r.id, "remove_home")} disabled={actionLoading === r.id}
+                          className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
+                          🗑️ Remove home
+                        </button>
+                        <button onClick={() => actOnRequest(r.id, "dismiss")} disabled={actionLoading === r.id}
+                          className="text-xs px-3 py-1.5 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 disabled:opacity-50">
+                          Dismiss
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       )}
     </div>

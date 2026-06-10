@@ -25,6 +25,7 @@ export default function SubmitForm() {
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -85,6 +86,11 @@ export default function SubmitForm() {
       return;
     }
 
+    if (!consent) {
+      setError("Please confirm you own this home or have permission to list it.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -103,6 +109,7 @@ export default function SubmitForm() {
           address: form.address || null,
           neighborhood: form.neighborhood || null,
           season_id: parseInt(form.season_id),
+          owner_consent: consent,
         }),
       });
 
@@ -164,7 +171,7 @@ export default function SubmitForm() {
           Your display has been submitted for review. Most submissions are approved within 24 hours.
         </p>
         <div className="flex justify-center gap-4">
-          <button onClick={() => { setSuccess(false); setForm({ title: "", description: "", city: "", region: "", address: "", neighborhood: "", season_id: "" }); setPhotos([]); setPreviews([]); }}
+          <button onClick={() => { setSuccess(false); setForm({ title: "", description: "", city: "", region: "", address: "", neighborhood: "", season_id: "" }); setPhotos([]); setPreviews([]); setConsent(false); }}
             className="px-6 py-3 bg-[#C0392B] hover:bg-[#A93226] text-white font-bold rounded-xl shadow transition-all">
             Submit Another
           </button>
@@ -313,7 +320,17 @@ export default function SubmitForm() {
             )}
           </div>
 
-          <div className="pt-4">
+          {/* Ownership / consent */}
+          <label className="flex items-start gap-3 p-4 bg-[#F8F6F1] rounded-xl cursor-pointer">
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)}
+              className="mt-1 w-4 h-4 accent-[#C0392B]" />
+            <span className="text-sm text-gray-600">
+              I own this home, or I have the homeowner&apos;s permission to list it publicly. I understand
+              the location will be shown only as an approximate area, never an exact address. *
+            </span>
+          </label>
+
+          <div className="pt-2">
             <button type="submit" disabled={submitting}
               className="w-full px-8 py-4 bg-[#C0392B] hover:bg-[#A93226] text-white font-bold text-lg rounded-xl shadow-lg transition-all hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed">
               {submitting ? "Submitting..." : "Submit Display for Review"}

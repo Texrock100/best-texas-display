@@ -314,18 +314,23 @@ function MySubmissions({ displays, loading }: { displays: MyDisplay[]; loading: 
       ) : (
         <ul className="divide-y divide-gray-100">
           {displays.map((d) => (
-            <li key={d.id} className="py-3 flex items-center justify-between">
-              <div>
-                <p className="font-medium text-[#1B3A5C]">{d.title}</p>
+            <li key={d.id} className="py-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <Link href={`/displays/${d.id}`} className="font-medium text-[#1B3A5C] hover:underline">{d.title}</Link>
                 <p className="text-sm text-gray-500">{d.city} · {d.vote_count} votes</p>
               </div>
-              <span className={`text-xs px-2 py-1 rounded-full capitalize ${
-                d.status === "approved" ? "bg-green-100 text-green-700"
-                : d.status === "rejected" ? "bg-red-100 text-red-700"
-                : "bg-amber-100 text-amber-700"
-              }`}>
-                {d.status}
-              </span>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link href={`/displays/${d.id}/edit`} className="text-sm text-[#C0392B] font-medium hover:underline">
+                  Edit
+                </Link>
+                <span className={`text-xs px-2 py-1 rounded-full capitalize ${
+                  d.status === "approved" ? "bg-green-100 text-green-700"
+                  : d.status === "rejected" ? "bg-red-100 text-red-700"
+                  : "bg-amber-100 text-amber-700"
+                }`}>
+                  {d.status}
+                </span>
+              </div>
             </li>
           ))}
         </ul>

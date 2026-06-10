@@ -113,15 +113,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, address, neighborhood, city, region, season_id, latitude, longitude } = body;
+    const { title, description, address, neighborhood, city, region, season_id, latitude, longitude, owner_consent } = body;
 
     if (!title || !city || !region || !season_id) {
       return NextResponse.json({ error: 'Missing required fields: title, city, region, season_id' }, { status: 400 });
     }
 
+    if (!owner_consent) {
+      return NextResponse.json({ error: 'Ownership confirmation is required to submit a display.' }, { status: 400 });
+    }
+
     const result = await pool.query(
-      `INSERT INTO displays (owner_id, title, description, address, neighborhood, city, region, season_id, latitude, longitude)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO displays (owner_id, title, description, address, neighborhood, city, region, season_id, latitude, longitude, owner_consent, consent_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE, NOW())
        RETURNING *`,
       [user.userId, title, description, address, neighborhood, city, region, season_id, latitude, longitude]
     );

@@ -42,7 +42,10 @@ export async function POST(request: NextRequest) {
       'SELECT owner_id FROM displays WHERE id = $1',
       [parseInt(displayId)]
     );
-    if (!displayResult.rows[0] || displayResult.rows[0].owner_id !== user.userId) {
+    if (!displayResult.rows[0]) {
+      return NextResponse.json({ error: 'Display not found' }, { status: 404 });
+    }
+    if (displayResult.rows[0].owner_id !== user.userId && user.role !== 'admin') {
       return NextResponse.json({ error: 'Not authorized to upload to this display' }, { status: 403 });
     }
 

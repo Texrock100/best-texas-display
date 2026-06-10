@@ -28,6 +28,16 @@ export async function uploadToR2(
   return `${process.env.R2_PUBLIC_URL || ''}/${key}`;
 }
 
+// Recovers the R2 object key from a stored public URL (the inverse of uploadToR2).
+// Returns null for URLs we don't manage (e.g. local-dev placeholders) so callers
+// can skip the R2 delete safely.
+export function keyFromPublicUrl(url: string): string | null {
+  const base = process.env.R2_PUBLIC_URL;
+  if (!base || !url) return null;
+  const prefix = `${base.replace(/\/$/, '')}/`;
+  return url.startsWith(prefix) ? url.slice(prefix.length) : null;
+}
+
 export async function deleteFromR2(key: string): Promise<void> {
   await s3Client.send(
     new DeleteObjectCommand({

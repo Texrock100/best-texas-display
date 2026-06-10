@@ -234,7 +234,6 @@ export default function InteractiveMap() {
                           <p className="text-xs text-gray-400 mt-1">
                             {d.neighborhood ? `${d.neighborhood}, ` : ""}{d.city} &bull; {d.vote_count} votes
                           </p>
-                          {d.address && <p className="text-xs text-gray-400">{d.address}</p>}
                         </div>
                         <div className="flex items-center space-x-2 ml-4">
                           <span className="text-sm">{d.holiday_type === "halloween" ? "🎃" : "🎄"}</span>
