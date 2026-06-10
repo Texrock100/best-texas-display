@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     let query = `
       SELECT d.id, d.title, d.city, d.region, d.neighborhood,
-        d.latitude, d.longitude, d.vote_count, d.season_id,
+        d.latitude::float8 AS latitude, d.longitude::float8 AS longitude, d.vote_count, d.season_id,
         s.holiday_type, s.name as season_name,
         (SELECT url FROM photos p WHERE p.display_id = d.id ORDER BY sort_order LIMIT 1) as thumbnail
       FROM displays d

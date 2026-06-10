@@ -114,7 +114,9 @@ export default function InteractiveMap() {
 
       const marker = new google.maps.marker.AdvancedMarkerElement({
         map: googleMapRef.current!,
-        position: { lat: display.latitude, lng: display.longitude },
+        // Coerce to Number — Postgres DECIMAL arrives as a string, and Google Maps
+        // requires numeric lat/lng or it throws and crashes the map.
+        position: { lat: Number(display.latitude), lng: Number(display.longitude) },
         content: pinEl,
         title: display.title,
       });
