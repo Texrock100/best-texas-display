@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { geocodeApprox } from '@/lib/geocode';
 
 // Fields an owner is allowed to edit, mapped to how they're parsed/normalized.
+// Coordinates are intentionally NOT editable — they're re-derived server-side
+// (blurred) from the location fields below, so the client can't set a raw point.
 const EDITABLE_FIELDS: Record<string, (v: unknown) => string | number | null> = {
   title: (v) => (typeof v === 'string' ? v.trim() : null),
   description: (v) => (v ? String(v) : null),
@@ -11,9 +14,10 @@ const EDITABLE_FIELDS: Record<string, (v: unknown) => string | number | null> = 
   city: (v) => (typeof v === 'string' ? v.trim() : null),
   region: (v) => (typeof v === 'string' ? v.trim() : null),
   season_id: (v) => (v ? parseInt(String(v)) : null),
-  latitude: (v) => (v === null || v === undefined || v === '' ? null : Number(v)),
-  longitude: (v) => (v === null || v === undefined || v === '' ? null : Number(v)),
 };
+
+// Editing any of these re-triggers geocoding.
+const LOCATION_FIELDS = ['address', 'neighborhood', 'city'];
 
 // GET /api/displays/[id] - Fetch a single display with its photos (owner or admin).
 // Used to pre-fill the edit form, so it must work for pending displays too.
@@ -101,8 +105,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       `UPDATE displays SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       values
     );
+    const display = result.rows[0];
 
-    return NextResponse.json({ display: result.rows[0] });
+    // If the owner changed a location field, re-derive the (blurred) coordinates.
+    if (LOCATION_FIELDS.some((f) => f in body)) {
+      const geo = await geocodeApprox({
+        address: display.address,
+        neighborhood: display.neighborhood,
+        city: display.city,
+      });
+      const geoResult = await pool.query(
+        'UPDATE displays SET latitude = $1, longitude = $2 WHERE id = $3 RETURNING *',
+        [geo?.latitude ?? null, geo?.longitude ?? null, displayId]
+      );
+      return NextResponse.json({ display: geoResult.rows[0] });
+    }
+
+    return NextResponse.json({ display });
   } catch (error) {
     console.error('Error updating display:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

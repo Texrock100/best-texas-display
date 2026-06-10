@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
+import { geocodeApprox } from '@/lib/geocode';
 
 // GET /api/displays - List displays with filtering
 export async function GET(request: NextRequest) {
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, address, neighborhood, city, region, season_id, latitude, longitude, owner_consent } = body;
+    const { title, description, address, neighborhood, city, region, season_id, owner_consent } = body;
 
     if (!title || !city || !region || !season_id) {
       return NextResponse.json({ error: 'Missing required fields: title, city, region, season_id' }, { status: 400 });
@@ -123,11 +124,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ownership confirmation is required to submit a display.' }, { status: 400 });
     }
 
+    // Coordinates are derived server-side (blurred for privacy) — never trusted from the client.
+    const geo = await geocodeApprox({ address, neighborhood, city });
+
     const result = await pool.query(
       `INSERT INTO displays (owner_id, title, description, address, neighborhood, city, region, season_id, latitude, longitude, owner_consent, consent_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE, NOW())
        RETURNING *`,
-      [user.userId, title, description, address, neighborhood, city, region, season_id, latitude, longitude]
+      [user.userId, title, description, address, neighborhood, city, region, season_id, geo?.latitude ?? null, geo?.longitude ?? null]
     );
 
     return NextResponse.json({ display: result.rows[0] }, { status: 201 });
